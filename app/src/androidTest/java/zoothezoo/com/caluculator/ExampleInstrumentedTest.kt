@@ -1,4 +1,4 @@
-package zoothezoo.com.caluculor
+package zoothezoo.com.caluculator
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4

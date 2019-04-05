@@ -1,4 +1,4 @@
-package zoothezoo.com.caluculor
+package zoothezoo.com.caluculator
 
 import org.junit.Test
 
