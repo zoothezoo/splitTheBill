@@ -1,18 +1,24 @@
 package zoothezoo.com.caluculator
 
+import android.content.DialogInterface
 import android.os.Bundle
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import android.util.Log
+import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity() {
+ class MainActivity : AppCompatActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
 
         //input
         var iptotal = findViewById<EditText>(R.id.ipTotal)
@@ -21,6 +27,7 @@ class MainActivity : AppCompatActivity() {
         var ipsenior = findViewById<EditText>(R.id.ipSenior)
         var ipjunior = findViewById<EditText>(R.id.ipJunior)
         var ipmiddle = findViewById<EditText>(R.id.ipMiddle)
+        var ipdiff = findViewById<EditText>(R.id.ipDiff)
 
         //output
         var conclusion = findViewById<TextView>(R.id.conclusion)
@@ -41,6 +48,7 @@ class MainActivity : AppCompatActivity() {
         var junior = 0
         var middle = 0
         var ans = ""
+        var diff = 0
 
         //checkboxの操作
         //TODO　チェックが入っていないときEdittextの入力を禁止する.
@@ -61,50 +69,148 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
         btdoit.setOnClickListener{
-            total = iptotal.text.toString().toInt()
+            if(!cbgrade.isChecked && !cbgender.isChecked){
+                AlertDialog.Builder(this).apply {
+                    setTitle("Error")
+                    setMessage("Select The Mode")
+                    setPositiveButton("Yes", null)
+                    setNegativeButton("Ok", null)
+                    show()
+                }
+            }
+
+            total = if (iptotal.text.toString() == "") 0 else iptotal.text.toString().toInt()
+            val result1: Result<Unit> = runCatching {
+                val e = 100 / total
+            }.onSuccess {  }
+                .onFailure {
+                    AlertDialog.Builder(this).apply {
+                        setTitle("Error")
+                        setMessage("Input Total")
+                        setPositiveButton("Yes", null)
+                        setNegativeButton("Ok", null)
+                        show()
+                    }
+                }
+            diff = if (ipdiff.text.toString() == "") 0 else ipdiff.text.toString().toInt()
             if(cbgender.isChecked) {
-                men = ipmen.text.toString().toInt()
-                women = ipwomen.text.toString().toInt()
+                men = if (ipmen.text.toString() == "") 0 else ipmen.text.toString().toInt()
+                women = if (ipwomen.text.toString() == "") 0 else ipwomen.text.toString().toInt()
+                if (men == 0){
+                    ipmen.setText("0")
+                }
+                if (women == 0){
+                    ipwomen.setText("0")
+                }
+                val result2: Result<Unit> = runCatching {
+                    val e = 100 / (men + women)
+                }.onSuccess{
+                }.onFailure {
+                    AlertDialog.Builder(this).apply {
+                        setTitle("Error")
+                        setMessage("Can't devide by zero")
+                        setPositiveButton("Yes", null)
+                        setNegativeButton("Ok", null)
+                        show()
+                    }
+                    return@setOnClickListener
+                }
             }
             if(cbgrade.isChecked) {
-                senior = ipsenior.text.toString().toInt()
-                middle = ipmiddle.text.toString().toInt()
-                junior = ipjunior.text.toString().toInt()
+                senior = if (ipsenior.text.toString() == "") 0 else ipsenior.text.toString().toInt()
+                middle = if (ipmiddle.text.toString() == "") 0 else ipmiddle.text.toString().toInt()
+                junior = if (ipjunior.text.toString() == "") 0 else ipjunior.text.toString().toInt()
+                if (senior == 0){
+                    ipmen.setText("0")
+                }
+                if (middle == 0){
+                    ipwomen.setText("0")
+                }
+                if (junior == 0){
+                    ipjunior.setText("0")
+                }
+                val result3: Result<Unit> = runCatching {
+                    val e = 100 / (senior + middle + junior)
+                }.onSuccess{
+                }.onFailure {
+                    AlertDialog.Builder(this).apply {
+                        setTitle("Error")
+                        setMessage("Can't devide by zero")
+                        setPositiveButton("Yes", null)
+                        setNegativeButton("Ok", null)
+                        show()
+                    }
+                    return@setOnClickListener
+                }
             }
-            var diff = 1000
+
             var ave1 = 10000
             var ave2 = 0
-
+            var ave3 = 0
+            var redundant = 0
 
             //TODO 答えをリストに入れてけば楽になるかも.
             when{
                 cbgender.isChecked -> {
-                    if(men != 0 && women != 0) {
-                        ave1 = total / (men + women)
-                        ave2 = (total - ave1 * men) / women
-                        while (Math.abs((ave1 - ave2) - diff) > 200) {
-                            ave1 += 50
-                            ave2 = (total - ave1 * men) / women
-                        }
-                    }
-                    else if(men == 0){
+                    ave1 = total / (men + women)
+                    ave2 = ave1
+                    if (men == 0) {
                         ave1 = 0
                         ave2 = total / women
                     }
-                    else{
+                    else if(women == 0){
                         ave1 = total / men
                         ave2 = 0
                     }
+                    else {
+                        while (Math.abs((ave1 - ave2) - diff) > 50) {
+                            ave2 -= 10
+                            ave1 = (total - ave2 * women) / men
+                        }
+                    }
 
-                    var paymen = ave1 / 100 * 100
-                    var paywomen = ave2 / 100 * 100
-                    var lack = total - (paymen * men + paywomen * women)
 
-                    ans = "men: ${paymen}/ women: ${paywomen}/ lack: $lack"
+                    var paymen = (ave1 + 100) / 100 * 100
+                    var paywomen = (ave2 + 100) / 100 * 100
+
+                    if (ave1 % 100 == 0) {
+                        paymen = ave1
+                    }
+                    if (ave2 % 100 == 0) {
+                        paywomen = ave2
+                    }
+
+                    redundant = (paymen * men + paywomen * women) - total
+
+                    ans = "men: ${paymen}/ women: ${paywomen}/ redundant: $redundant"
                 }
                 cbgrade.isChecked -> {
+                    ave1 = total / (senior + middle + junior)
+                    ave2 = ave1
+                    ave3 = ave1
+                    if(senior == 0 || middle == 0 || junior == 0){
+                        AlertDialog.Builder(this).apply {
+                            setTitle("Error")
+                            setMessage("Use Gender Mode")
+                            setPositiveButton("Yes", null)
+                            setNegativeButton("Ok", null)
+                            show()
+                        }
+                    }
+                    while(Math.abs((ave1 - ave2) - diff) > 100 || Math.abs((ave2 - ave3) - diff) > 100) {
+                        ave3 -= 20
+                        ave2 -= 10
+                        ave1 -= (total - ave3*junior + ave2*middle) / senior
+                    }
+                    var paysenior = (ave1 + 100) / 100 * 100
+                    var paymiddle = (ave2 + 100) / 100 * 100
+                    var payjunior = (ave3 + 100) / 100 * 100
+
+                    redundant = (payjunior*junior + paymiddle*middle + paysenior*senior) - total
+                    ans = "senior : ${paysenior}/ middle : ${paymiddle}/ junior : ${payjunior} / redundant: $redundant"
+
+
                 }
             }
             conclusion.setText(ans)
@@ -128,7 +234,9 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-}
+     interface Text
+ }
+
 
 
 //TODO 10000,93,5 の時に負が出る.
