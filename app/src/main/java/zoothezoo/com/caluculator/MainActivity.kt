@@ -241,4 +241,4 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 //TODO 10000,93,5 の時に負が出る.
 //TODO lackをルーレットで誰に払わせるか.
-//TODO lack or redundant
+//TODO lack or redundan{}t
