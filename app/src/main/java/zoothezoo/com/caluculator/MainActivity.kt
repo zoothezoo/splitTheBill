@@ -13,12 +13,11 @@ import android.widget.TextView
 import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
 
- class MainActivity : AppCompatActivity(){
+class MainActivity : AppCompatActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
 
         //input
         var iptotal = findViewById<EditText>(R.id.ipTotal)
@@ -28,9 +27,6 @@ import kotlinx.android.synthetic.main.activity_main.*
         var ipjunior = findViewById<EditText>(R.id.ipJunior)
         var ipmiddle = findViewById<EditText>(R.id.ipMiddle)
         var ipdiff = findViewById<EditText>(R.id.ipDiff)
-
-        //output
-        var conclusion = findViewById<TextView>(R.id.conclusion)
 
         //button
         var btdoit = findViewById<Button>(R.id.btDoit)
@@ -71,13 +67,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 
         btdoit.setOnClickListener{
             if(!cbgrade.isChecked && !cbgender.isChecked){
-                AlertDialog.Builder(this).apply {
-                    setTitle("Error")
-                    setMessage("Select The Mode")
-                    setPositiveButton("Yes", null)
-                    setNegativeButton("Ok", null)
-                    show()
-                }
+                alert("mode")
             }
 
             total = if (iptotal.text.toString() == "") 0 else iptotal.text.toString().toInt()
@@ -85,13 +75,7 @@ import kotlinx.android.synthetic.main.activity_main.*
                 val e = 100 / total
             }.onSuccess {  }
                 .onFailure {
-                    AlertDialog.Builder(this).apply {
-                        setTitle("Error")
-                        setMessage("Input Total")
-                        setPositiveButton("Yes", null)
-                        setNegativeButton("Ok", null)
-                        show()
-                    }
+                    alert("total")
                 }
             diff = if (ipdiff.text.toString() == "") 0 else ipdiff.text.toString().toInt()
             if(cbgender.isChecked) {
@@ -107,13 +91,7 @@ import kotlinx.android.synthetic.main.activity_main.*
                     val e = 100 / (men + women)
                 }.onSuccess{
                 }.onFailure {
-                    AlertDialog.Builder(this).apply {
-                        setTitle("Error")
-                        setMessage("Can't devide by zero")
-                        setPositiveButton("Yes", null)
-                        setNegativeButton("Ok", null)
-                        show()
-                    }
+                    alert("zero")
                     return@setOnClickListener
                 }
             }
@@ -122,10 +100,10 @@ import kotlinx.android.synthetic.main.activity_main.*
                 middle = if (ipmiddle.text.toString() == "") 0 else ipmiddle.text.toString().toInt()
                 junior = if (ipjunior.text.toString() == "") 0 else ipjunior.text.toString().toInt()
                 if (senior == 0){
-                    ipmen.setText("0")
+                    ipsenior.setText("0")
                 }
                 if (middle == 0){
-                    ipwomen.setText("0")
+                    ipmiddle.setText("0")
                 }
                 if (junior == 0){
                     ipjunior.setText("0")
@@ -134,86 +112,71 @@ import kotlinx.android.synthetic.main.activity_main.*
                     val e = 100 / (senior + middle + junior)
                 }.onSuccess{
                 }.onFailure {
-                    AlertDialog.Builder(this).apply {
-                        setTitle("Error")
-                        setMessage("Can't devide by zero")
-                        setPositiveButton("Yes", null)
-                        setNegativeButton("Ok", null)
-                        show()
-                    }
+                    alert("zero")
                     return@setOnClickListener
                 }
             }
 
-            var ave1 = 10000
-            var ave2 = 0
-            var ave3 = 0
-            var redundant = 0
+            var paymen = 0
+            var paywomen = 0
+            var paysenior = 0
+            var paymiddle = 0
+            var payjunior = 0
+            var redundant: Int
 
             //TODO 答えをリストに入れてけば楽になるかも.
             when{
                 cbgender.isChecked -> {
-                    ave1 = total / (men + women)
-                    ave2 = ave1
                     if (men == 0) {
-                        ave1 = 0
-                        ave2 = total / women
+                        paywomen = total / women
                     }
                     else if(women == 0){
-                        ave1 = total / men
-                        ave2 = 0
+                        paymen = total / men
                     }
                     else {
-                        while (Math.abs((ave1 - ave2) - diff) > 50) {
-                            ave2 -= 10
-                            ave1 = (total - ave2 * women) / men
-                        }
-                    }
-
-
-                    var paymen = (ave1 + 100) / 100 * 100
-                    var paywomen = (ave2 + 100) / 100 * 100
-
-                    if (ave1 % 100 == 0) {
-                        paymen = ave1
-                    }
-                    if (ave2 % 100 == 0) {
-                        paywomen = ave2
+                        val x = (total - men * diff) / (men + women)
+                        paymen = roundUp(x + diff)
+                        paywomen = roundUp(x)
                     }
 
                     redundant = (paymen * men + paywomen * women) - total
 
-                    ans = "men: ${paymen}/ women: ${paywomen}/ redundant: $redundant"
+                    if(paywomen < 0){
+                        val nega = 0 - paywomen
+                        paywomen += nega
+                        redundant += nega * women
+                    }
+
+                    ans = "men : ${paymen}\nwomen : ${paywomen}\nredundant : $redundant"
                 }
                 cbgrade.isChecked -> {
-                    ave1 = total / (senior + middle + junior)
-                    ave2 = ave1
-                    ave3 = ave1
                     if(senior == 0 || middle == 0 || junior == 0){
-                        AlertDialog.Builder(this).apply {
-                            setTitle("Error")
-                            setMessage("Use Gender Mode")
-                            setPositiveButton("Yes", null)
-                            setNegativeButton("Ok", null)
-                            show()
-                        }
+                        alert("gender")
                     }
-                    while(Math.abs((ave1 - ave2) - diff) > 100 || Math.abs((ave2 - ave3) - diff) > 100) {
-                        ave3 -= 20
-                        ave2 -= 10
-                        ave1 -= (total - ave3*junior + ave2*middle) / senior
+                    else{
+                        val x = (total - diff*middle - 2*diff*senior) / (senior + middle + junior)
+                        paysenior = roundUp(x + diff * 2)
+                        paymiddle = roundUp(x + diff)
+                        payjunior = roundUp(x)
                     }
-                    var paysenior = (ave1 + 100) / 100 * 100
-                    var paymiddle = (ave2 + 100) / 100 * 100
-                    var payjunior = (ave3 + 100) / 100 * 100
 
                     redundant = (payjunior*junior + paymiddle*middle + paysenior*senior) - total
-                    ans = "senior : ${paysenior}/ middle : ${paymiddle}/ junior : ${payjunior} / redundant: $redundant"
-
-
+                    if(payjunior < 0){
+                        val nega = 0 - payjunior
+                        payjunior += nega
+                        redundant += nega * junior
+                    }
+                    ans = "senior : ${paysenior}\nmiddle : ${paymiddle}\njunior : ${payjunior}\nredundant: $redundant"
                 }
             }
-            conclusion.setText(ans)
+           if(ans != "") {
+               AlertDialog.Builder(this).apply {
+                   setTitle("Conclusion")
+                   setMessage(ans)
+                   setPositiveButton("ok", null)
+                   show()
+               }
+           }
         }
 
         btclear.setOnClickListener{
@@ -231,11 +194,50 @@ import kotlinx.android.synthetic.main.activity_main.*
             ipsenior.setText("")
             ipmiddle.setText("")
             ipjunior.setText("")
+            ipdiff.setText("")
 
         }
     }
-     interface Text
- }
+
+    //100の位で切り上げる関数
+    fun roundUp(num :Int): Int{
+        return if(num % 100 == 0) num else (num + 100) / 100 * 100
+    }
+
+    fun alert(str: String): Unit {
+        when(str) {
+            "zero" ->
+                AlertDialog.Builder(this).apply {
+                    setTitle("Error")
+                    setMessage("Can't devide by zero")
+                    setPositiveButton("OK", null)
+                    show()
+                }
+            "total" ->
+                AlertDialog.Builder(this).apply {
+                    setTitle("Error")
+                    setMessage("Input Total")
+                    setNegativeButton("OK", null)
+                    show()
+                }
+            "gender" ->
+                AlertDialog.Builder(this).apply {
+                    setTitle("Error")
+                    setMessage("Use Gender Mode")
+                    setPositiveButton("OK", null)
+                    show()
+                }
+            "mode" ->
+                AlertDialog.Builder(this).apply {
+                    setTitle("Error")
+                    setMessage("Select The Mode")
+                    setPositiveButton("Yes", null)
+                    setNegativeButton("Ok", null)
+                    show()
+                }
+        }
+    }
+}
 
 
 
