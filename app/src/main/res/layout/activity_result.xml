@@ -7,4 +7,12 @@
         android:layout_height="match_parent"
         tools:context="zoothezoo.com.caluculator.ResultActivity">
 
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/resultText"
+            app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp" android:text="I'm A Perfect Human"/>
 </android.support.constraint.ConstraintLayout>
