@@ -1,22 +1,17 @@
 package zoothezoo.com.caluculator
 
-import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
-import android.text.Editable
-import android.text.TextWatcher
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
-import android.widget.TextView
-import android.util.Log
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(){
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState
+        )
         setContentView(R.layout.activity_main)
 
         //input
@@ -37,14 +32,9 @@ class MainActivity : AppCompatActivity(){
         var cbgrade = findViewById<CheckBox>(R.id.cbGrade)
 
         //variable
-        var total = 0
-        var men = 0
-        var women = 0
-        var senior = 0
-        var junior = 0
-        var middle = 0
-        var ans = ""
-        var diff = 0
+
+        val people = mutableListOf<Int>()
+
 
         //checkboxの操作
         //TODO　チェックが入っていないときEdittextの入力を禁止する.
@@ -65,127 +55,55 @@ class MainActivity : AppCompatActivity(){
             }
         }
 
+
+        var ans = ""
+        var paypay = mutableListOf<Int>()
         btdoit.setOnClickListener{
+            val diff = if (ipdiff.text.toString() != "") ipdiff.text.toString().toInt() else 0
+            val total = if (iptotal.text.toString() != "") iptotal.text.toString().toInt() else 0
+            people.clear()
+            var flag = true
+
             if(!cbgrade.isChecked && !cbgender.isChecked){
                 alert("mode")
+                flag = false
+            }
+            else if(cbgrade.isChecked){
+                ans = ""
+                people.add(if(ipsenior.text.toString() != "") ipsenior.text.toString().toInt() else 0)
+                people.add(if(ipmiddle.text.toString() != "") ipmiddle.text.toString().toInt() else 0)
+                people.add(if(ipjunior.text.toString() != "") ipjunior.text.toString().toInt() else 0)
+
+                paypay = calculate(people, total, diff)
+
+            }
+            else if(cbgender.isChecked){
+                ans = ""
+                people.add(if(ipmen.text.toString() != "") ipmen.text.toString().toInt() else 0)
+                people.add(if(ipwomen.text.toString() != "") ipwomen.text.toString().toInt() else 0)
+                paypay = calculate(people, total, diff)
             }
 
-            total = if (iptotal.text.toString() == "") 0 else iptotal.text.toString().toInt()
-            val result1: Result<Unit> = runCatching {
-                val e = 100 / total
-            }.onSuccess {  }
-                .onFailure {
-                    alert("total")
-                }
-            diff = if (ipdiff.text.toString() == "") 0 else ipdiff.text.toString().toInt()
-            if(cbgender.isChecked) {
-                men = if (ipmen.text.toString() == "") 0 else ipmen.text.toString().toInt()
-                women = if (ipwomen.text.toString() == "") 0 else ipwomen.text.toString().toInt()
-                if (men == 0){
-                    ipmen.setText("0")
-                }
-                if (women == 0){
-                    ipwomen.setText("0")
-                }
-                val result2: Result<Unit> = runCatching {
-                    val e = 100 / (men + women)
-                }.onSuccess{
-                }.onFailure {
-                    alert("zero")
-                    return@setOnClickListener
-                }
+            for(i in 0 until paypay.size-1){
+                ans += "person$i:${paypay[i]}\n"
             }
-            if(cbgrade.isChecked) {
-                senior = if (ipsenior.text.toString() == "") 0 else ipsenior.text.toString().toInt()
-                middle = if (ipmiddle.text.toString() == "") 0 else ipmiddle.text.toString().toInt()
-                junior = if (ipjunior.text.toString() == "") 0 else ipjunior.text.toString().toInt()
-                if (senior == 0){
-                    ipsenior.setText("0")
-                }
-                if (middle == 0){
-                    ipmiddle.setText("0")
-                }
-                if (junior == 0){
-                    ipjunior.setText("0")
-                }
-                val result3: Result<Unit> = runCatching {
-                    val e = 100 / (senior + middle + junior)
-                }.onSuccess{
-                }.onFailure {
-                    alert("zero")
-                    return@setOnClickListener
-                }
+            ans += "お釣り:${paypay[paypay.size-1]}\n"
+
+            if(people.sum() == 0){
+                alert("zero")
+                flag = false
             }
 
-            var paymen = 0
-            var paywomen = 0
-            var paysenior = 0
-            var paymiddle = 0
-            var payjunior = 0
-            var redundant: Int
-
-            //TODO 答えをリストに入れてけば楽になるかも.
-            when{
-                cbgender.isChecked -> {
-                    if (men == 0) {
-                        paywomen = total / women
-                    }
-                    else if(women == 0){
-                        paymen = total / men
-                    }
-                    else {
-                        val x = (total - men * diff) / (men + women)
-                        paymen = roundUp(x + diff)
-                        paywomen = roundUp(x)
-                    }
-
-                    redundant = (paymen * men + paywomen * women) - total
-
-                    if(paywomen < 0){
-                        val nega = 0 - paywomen
-                        paywomen += nega
-                        redundant += nega * women
-                    }
-
-                    ans = "men : ${paymen}\nwomen : ${paywomen}\nredundant : $redundant"
-                }
-                cbgrade.isChecked -> {
-                    if(senior == 0 || middle == 0 || junior == 0){
-                        alert("gender")
-                    }
-                    else{
-                        val x = (total - diff*middle - 2*diff*senior) / (senior + middle + junior)
-                        paysenior = roundUp(x + diff * 2)
-                        paymiddle = roundUp(x + diff)
-                        payjunior = roundUp(x)
-                    }
-
-                    redundant = (payjunior*junior + paymiddle*middle + paysenior*senior) - total
-                    if(payjunior < 0){
-                        val nega = 0 - payjunior
-                        payjunior += nega
-                        redundant += nega * junior
-                    }
-                    ans = "senior : ${paysenior}\nmiddle : ${paymiddle}\njunior : ${payjunior}\nredundant: $redundant"
-                }
+            if(flag){
+                val intent = Intent(this, ResultActivity::class.java)
+                intent.putExtra("ans",ans)
+                startActivity(intent)
             }
-           if(ans != "") {
-               AlertDialog.Builder(this).apply {
-                   setTitle("Conclusion")
-                   setMessage(ans)
-                   setPositiveButton("ok", null)
-                   show()
-               }
-           }
+
         }
 
         btclear.setOnClickListener{
-            total = 0
-            men = 0
-            women = 0
-            senior = 0
-            junior = 0
-            middle = 0
+            people.clear()
             ans = ""
 
             iptotal.setText("")
@@ -197,6 +115,39 @@ class MainActivity : AppCompatActivity(){
             ipdiff.setText("")
 
         }
+    }
+
+    fun calculate(list: MutableList<Int>, total: Int, diff: Int): MutableList<Int>{
+        val payment = mutableListOf<Int>()
+        var sum = 0
+        //TODO:alertできひん
+        if(list.sum() == 0){
+            alert("zero")
+        }
+
+        for(i in 1 until list.size){
+            sum =+ i*list[i-1]*diff
+        }
+        //最低支払い価格
+        val base = (total - sum) / list.sum()
+        for(i in 0 until list.size){
+            if(list[i] != 0) {
+                payment.add(roundUp(base + (list.size - 1 - i) * diff))
+            }
+            else{
+                payment.add(0)
+            }
+        }
+
+        var sumPayment = 0
+        for(i in 0 until list.size){
+            sumPayment += payment[i]*list[i]
+        }
+
+        //paymentの末尾をおつりとする
+        payment.add(sumPayment - total)
+        return payment
+
     }
 
     //100の位で切り上げる関数
